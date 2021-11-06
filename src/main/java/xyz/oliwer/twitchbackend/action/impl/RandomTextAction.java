@@ -19,15 +19,12 @@ public final class RandomTextAction extends PatternTextAction {
   /** @see PatternTextAction#parse(String, String...) **/
   @Override
   public Object parse(String origin, String... parameters) {
-    try {
-      final int length = parameters.length;
-      if (length == 0)
-        return origin;
+    final int length = parameters.length;
+    if (length == 0)
+      return origin;
 
-      final ThreadLocalRandom random = ThreadLocalRandom.current();
-      return parameters[random.nextInt(parameters.length)];
-    } catch (NumberFormatException ignored) {}
-    return origin;
+    final ThreadLocalRandom random = ThreadLocalRandom.current();
+    return parameters[random.nextInt(parameters.length)];
   }
 
   /** @see PatternTextAction#tag() **/

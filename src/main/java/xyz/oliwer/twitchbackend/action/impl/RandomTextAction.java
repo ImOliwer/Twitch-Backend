@@ -24,7 +24,7 @@ public final class RandomTextAction extends PatternTextAction {
       return origin;
 
     final ThreadLocalRandom random = ThreadLocalRandom.current();
-    return parameters[random.nextInt(parameters.length)];
+    return parameters[random.nextInt(length)];
   }
 
   /** @see PatternTextAction#tag() **/

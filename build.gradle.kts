@@ -19,6 +19,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.jetbrains:annotations:20.1.0")
 	implementation("com.github.twitch4j:twitch4j:1.5.0")
+	implementation("com.jsoniter:jsoniter:0.9.1")
 
 	// test
     testImplementation("org.springframework.boot:spring-boot-starter-test")

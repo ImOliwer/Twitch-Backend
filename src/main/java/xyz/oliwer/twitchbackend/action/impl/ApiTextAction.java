@@ -57,7 +57,7 @@ public final class ApiTextAction extends PatternTextAction {
       // prepare request body
       final String requestType = parameters[2];
       switch (requestType) {
-        case "GET"   :
+        case "GET":
           request.GET();
           break;
         case "DELETE":
@@ -81,10 +81,11 @@ public final class ApiTextAction extends PatternTextAction {
             case "POST":
               request.POST(bodyPublisher);
               break;
-            case "PUT" :
+            case "PUT":
               request.PUT(bodyPublisher);
               break;
-            default: return origin;
+            default:
+              return origin;
           }
         }
       }
@@ -96,10 +97,14 @@ public final class ApiTextAction extends PatternTextAction {
       // prepare for extraction
       final String[] paths = parameters[1].split("\\.");
       final int lastIndex = paths.length - 1;
-
-      // extract content
       Any next = deserialize(responseBody);
       Object value = null;
+
+      // return the deserialized value if there is no path
+      if (lastIndex == -1 || lastIndex == 0 && paths[0].isBlank())
+        return next;
+
+      // extract content
       for (int index = 0; index < paths.length; index++) {
         if (value != null)
           return origin;

@@ -52,6 +52,7 @@ public final class ApiTextAction extends PatternTextAction {
       }
 
       // overridden headers
+      request.setHeader("User-Agent", "API-Text-Action");
       request.setHeader("Content-Type", "application/json");
 
       // prepare request body

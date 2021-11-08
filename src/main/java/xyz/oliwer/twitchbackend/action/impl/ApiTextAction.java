@@ -56,12 +56,11 @@ public final class ApiTextAction extends PatternTextAction {
         if (index == 0)
           fromPath = object.readAny().get(path);
         else {
-          final Class<?> nextClass = next.getClass();
-          if (Map.class.isAssignableFrom(nextClass))
+          if (next instanceof Map)
             fromPath = ((Map<String, Object>) next).get(path);
-          else if (List.class.isAssignableFrom(nextClass))
+          else if (next instanceof List)
             fromPath = ((List<Object>) next).get(indexFromSpec(path));
-          else if (nextClass.isArray())
+          else if (next.getClass().isArray())
             fromPath = ((Object[]) next)[indexFromSpec(path)];
           else return origin;
         }

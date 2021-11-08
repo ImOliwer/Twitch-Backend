@@ -8,7 +8,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -18,6 +17,7 @@ import static java.lang.Integer.parseInt;
 import static java.net.http.HttpRequest.BodyPublisher;
 import static java.net.http.HttpRequest.BodyPublishers;
 import static java.net.http.HttpResponse.BodyHandlers;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * This class represents the "API" implementation of {@link PatternTextAction}.
@@ -90,7 +90,7 @@ public final class ApiTextAction extends PatternTextAction {
       }
 
       // send request
-      final HttpResponse<String> response = client.send(request.build(), BodyHandlers.ofString(StandardCharsets.UTF_8));
+      final HttpResponse<String> response = client.send(request.build(), BodyHandlers.ofString(UTF_8));
       final String responseBody = response.body();
 
       // prepare for extraction
@@ -119,9 +119,7 @@ public final class ApiTextAction extends PatternTextAction {
 
       // return value
       return value;
-    } catch (Exception ignored) {
-      ignored.printStackTrace();
-    }
+    } catch (Exception ignored) {}
 
     // an exception was caught and has relinquished the url - return the origin
     return origin;

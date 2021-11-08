@@ -1,16 +1,23 @@
 package xyz.oliwer.twitchbackend.action.impl;
 
-import com.jsoniter.Jsoniter;
+import com.jsoniter.any.Any;
 import xyz.oliwer.twitchbackend.action.PatternTextAction;
 import xyz.oliwer.twitchbackend.action.TextAction;
 
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Scanner;
 
+import static com.jsoniter.JsonIterator.deserialize;
+import static com.jsoniter.output.JsonStream.serialize;
 import static java.lang.Integer.parseInt;
+import static java.net.http.HttpRequest.BodyPublisher;
+import static java.net.http.HttpRequest.BodyPublishers;
+import static java.net.http.HttpResponse.BodyHandlers;
 
 /**
  * This class represents the "API" implementation of {@link PatternTextAction}.
@@ -28,53 +35,93 @@ public final class ApiTextAction extends PatternTextAction {
   /** @see PatternTextAction#parse(String, String...) **/
   @Override
   public Object parse(String origin, String... parameters) {
-    // read content of page
-    try (final InputStream stream = new URL(parameters[0]).openStream();
-         final Scanner scanner = new Scanner(stream)) {
-      // builder to append content to
-      final StringBuilder builder = new StringBuilder();
+    // handle request
+    try {
+      // create the client & request
+      final HttpClient client = HttpClient.newHttpClient();
+      final HttpRequest.Builder request = HttpRequest
+        .newBuilder(URI.create(parameters[0]));
 
-      // loop over and append content
-      while (scanner.hasNext())
-        builder.append(scanner.next());
+      // prepare request headers
+      final String[] headers = parameters[3].split(";;");
+      for (final String header : headers) {
+        final String[] pair = header.split("=");
+        if (pair.length < 2)
+          continue;
+        request.setHeader(pair[0], pair[1]);
+      }
+
+      // overridden headers
+      request.setHeader("Content-Type", "application/json");
+
+      // prepare request body
+      final String requestType = parameters[2];
+      switch (requestType) {
+        case "GET"   :
+          request.GET();
+          break;
+        case "DELETE":
+          request.DELETE();
+          break;
+        default: {
+          // fetch and build the body
+          final Map<String, String> body = new LinkedHashMap<>();
+          final String[] bodyProperties = parameters[4].split(";;");
+
+          for (final String bodyProperty : bodyProperties) {
+            final String[] pair = bodyProperty.split("=");
+            if (pair.length < 2)
+              continue;
+            body.put(pair[0], pair[1]);
+          }
+
+          final BodyPublisher bodyPublisher = BodyPublishers.ofString(serialize(body));
+          // set request type accordingly
+          switch (requestType) {
+            case "POST":
+              request.POST(bodyPublisher);
+              break;
+            case "PUT" :
+              request.PUT(bodyPublisher);
+              break;
+            default: return origin;
+          }
+        }
+      }
+
+      // send request
+      final HttpResponse<String> response = client.send(request.build(), BodyHandlers.ofString(StandardCharsets.UTF_8));
+      final String responseBody = response.body();
 
       // prepare for extraction
-      final Jsoniter object = Jsoniter.parse(builder.toString());
       final String[] paths = parameters[1].split("\\.");
       final int lastIndex = paths.length - 1;
 
       // extract content
-      Object next = null;
+      Any next = deserialize(responseBody);
       Object value = null;
       for (int index = 0; index < paths.length; index++) {
         if (value != null)
           return origin;
 
         final String path = paths[index];
-        final Object fromPath;
+        final int pathLength = path.length();
 
-        if (index == 0)
-          fromPath = object.readAny().get(path);
-        else {
-          if (next instanceof Map)
-            fromPath = ((Map<String, Object>) next).get(path);
-          else if (next instanceof List)
-            fromPath = ((List<Object>) next).get(indexFromSpec(path));
-          else if (next.getClass().isArray())
-            fromPath = ((Object[]) next)[indexFromSpec(path)];
-          else return origin;
-        }
-
-        if (index != lastIndex) {
-          next = fromPath;
+        if (pathLength >= 3 && path.charAt(0) == '[' && path.charAt(pathLength - 1) == ']') {
+          next = next.get(indexFromSpec(path));
         } else {
-          value = fromPath;
+          next = next.get(path);
         }
+
+        if (index == lastIndex)
+          value = next;
       }
 
       // return value
       return value;
-    } catch (Exception ignored) {}
+    } catch (Exception ignored) {
+      ignored.printStackTrace();
+    }
 
     // an exception was caught and has relinquished the url - return the origin
     return origin;
